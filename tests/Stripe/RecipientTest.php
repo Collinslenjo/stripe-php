@@ -14,7 +14,7 @@ class RecipientTest extends TestCase
         );
         $resources = Recipient::all();
         $this->assertTrue(is_array($resources->data));
-        $this->assertSame("Stripe\\Recipient", get_class($resources->data[0]));
+        $this->assertInstanceOf("Stripe\\Recipient", $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,7 +24,7 @@ class RecipientTest extends TestCase
             '/v1/recipients/' . self::TEST_RESOURCE_ID
         );
         $resource = Recipient::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertSame("Stripe\\Recipient", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Recipient", $resource);
     }
 
     public function testIsCreatable()
@@ -33,11 +33,11 @@ class RecipientTest extends TestCase
             'post',
             '/v1/recipients'
         );
-        $resource = Recipient::create(array(
+        $resource = Recipient::create([
             "name" => "name",
             "type" => "individual"
-        ));
-        $this->assertSame("Stripe\\Recipient", get_class($resource));
+        ]);
+        $this->assertInstanceOf("Stripe\\Recipient", $resource);
     }
 
     public function testIsSaveable()
@@ -46,10 +46,10 @@ class RecipientTest extends TestCase
         $resource->metadata["key"] = "value";
         $this->expectsRequest(
             'post',
-            '/v1/recipients/' . self::TEST_RESOURCE_ID
+            '/v1/recipients/' . $resource->id
         );
         $resource->save();
-        $this->assertSame("Stripe\\Recipient", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Recipient", $resource);
     }
 
     public function testIsUpdatable()
@@ -58,10 +58,10 @@ class RecipientTest extends TestCase
             'post',
             '/v1/recipients/' . self::TEST_RESOURCE_ID
         );
-        $resource = Recipient::update(self::TEST_RESOURCE_ID, array(
-            "metadata" => array("key" => "value"),
-        ));
-        $this->assertSame("Stripe\\Recipient", get_class($resource));
+        $resource = Recipient::update(self::TEST_RESOURCE_ID, [
+            "metadata" => ["key" => "value"],
+        ]);
+        $this->assertInstanceOf("Stripe\\Recipient", $resource);
     }
 
     public function testIsDeletable()
@@ -69,10 +69,10 @@ class RecipientTest extends TestCase
         $resource = Recipient::retrieve(self::TEST_RESOURCE_ID);
         $this->expectsRequest(
             'delete',
-            '/v1/recipients/' . self::TEST_RESOURCE_ID
+            '/v1/recipients/' . $resource->id
         );
         $resource->delete();
-        $this->assertSame("Stripe\\Recipient", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Recipient", $resource);
     }
 
     public function testCanListTransfers()
@@ -81,10 +81,10 @@ class RecipientTest extends TestCase
         $this->expectsRequest(
             'get',
             '/v1/transfers',
-            array("recipient" => $recipient->id)
+            ["recipient" => $recipient->id]
         );
         $resources = $recipient->transfers();
         $this->assertTrue(is_array($resources->data));
-        $this->assertSame("Stripe\\Transfer", get_class($resources->data[0]));
+        $this->assertInstanceOf("Stripe\\Transfer", $resources->data[0]);
     }
 }

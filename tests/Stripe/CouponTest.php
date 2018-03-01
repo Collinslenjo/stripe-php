@@ -14,7 +14,7 @@ class CouponTest extends TestCase
         );
         $resources = Coupon::all();
         $this->assertTrue(is_array($resources->data));
-        $this->assertSame("Stripe\\Coupon", get_class($resources->data[0]));
+        $this->assertInstanceOf("Stripe\\Coupon", $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,7 +24,7 @@ class CouponTest extends TestCase
             '/v1/coupons/' . self::TEST_RESOURCE_ID
         );
         $resource = Coupon::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertSame("Stripe\\Coupon", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Coupon", $resource);
     }
 
     public function testIsCreatable()
@@ -33,13 +33,13 @@ class CouponTest extends TestCase
             'post',
             '/v1/coupons'
         );
-        $resource = Coupon::create(array(
+        $resource = Coupon::create([
             "percent_off" => 25,
             "duration" => "repeating",
             "duration_in_months" => 3,
             "id" => self::TEST_RESOURCE_ID,
-        ));
-        $this->assertSame("Stripe\\Coupon", get_class($resource));
+        ]);
+        $this->assertInstanceOf("Stripe\\Coupon", $resource);
     }
 
     public function testIsSaveable()
@@ -51,7 +51,7 @@ class CouponTest extends TestCase
             '/v1/coupons/' . self::TEST_RESOURCE_ID
         );
         $resource->save();
-        $this->assertSame("Stripe\\Coupon", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Coupon", $resource);
     }
 
     public function testIsUpdatable()
@@ -60,10 +60,10 @@ class CouponTest extends TestCase
             'post',
             '/v1/coupons/' . self::TEST_RESOURCE_ID
         );
-        $resource = Coupon::update(self::TEST_RESOURCE_ID, array(
-            "metadata" => array("key" => "value"),
-        ));
-        $this->assertSame("Stripe\\Coupon", get_class($resource));
+        $resource = Coupon::update(self::TEST_RESOURCE_ID, [
+            "metadata" => ["key" => "value"],
+        ]);
+        $this->assertInstanceOf("Stripe\\Coupon", $resource);
     }
 
     public function testIsDeletable()
@@ -74,6 +74,6 @@ class CouponTest extends TestCase
             '/v1/coupons/' . self::TEST_RESOURCE_ID
         );
         $resource->delete();
-        $this->assertSame("Stripe\\Coupon", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Coupon", $resource);
     }
 }

@@ -14,7 +14,7 @@ class OrderTest extends TestCase
         );
         $resources = Order::all();
         $this->assertTrue(is_array($resources->data));
-        $this->assertSame("Stripe\\Order", get_class($resources->data[0]));
+        $this->assertInstanceOf("Stripe\\Order", $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,7 +24,7 @@ class OrderTest extends TestCase
             '/v1/orders/' . self::TEST_RESOURCE_ID
         );
         $resource = Order::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertSame("Stripe\\Order", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Order", $resource);
     }
 
     public function testIsCreatable()
@@ -33,10 +33,10 @@ class OrderTest extends TestCase
             'post',
             '/v1/orders'
         );
-        $resource = Order::create(array(
+        $resource = Order::create([
             'currency' => 'usd'
-        ));
-        $this->assertSame("Stripe\\Order", get_class($resource));
+        ]);
+        $this->assertInstanceOf("Stripe\\Order", $resource);
     }
 
     public function testIsSaveable()
@@ -45,10 +45,10 @@ class OrderTest extends TestCase
         $resource->metadata["key"] = "value";
         $this->expectsRequest(
             'post',
-            '/v1/orders/' . self::TEST_RESOURCE_ID
+            '/v1/orders/' . $resource->id
         );
         $resource->save();
-        $this->assertSame("Stripe\\Order", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Order", $resource);
     }
 
     public function testIsUpdatable()
@@ -57,10 +57,10 @@ class OrderTest extends TestCase
             'post',
             '/v1/orders/' . self::TEST_RESOURCE_ID
         );
-        $resource = Order::update(self::TEST_RESOURCE_ID, array(
-            "metadata" => array("key" => "value"),
-        ));
-        $this->assertSame("Stripe\\Order", get_class($resource));
+        $resource = Order::update(self::TEST_RESOURCE_ID, [
+            "metadata" => ["key" => "value"],
+        ]);
+        $this->assertInstanceOf("Stripe\\Order", $resource);
     }
 
     public function testIsPayable()
@@ -68,10 +68,10 @@ class OrderTest extends TestCase
         $resource = Order::retrieve(self::TEST_RESOURCE_ID);
         $this->expectsRequest(
             'post',
-            '/v1/orders/' . self::TEST_RESOURCE_ID . '/pay'
+            '/v1/orders/' . $resource->id . '/pay'
         );
         $resource->pay();
-        $this->assertSame("Stripe\\Order", get_class($resource));
+        $this->assertInstanceOf("Stripe\\Order", $resource);
     }
 
     public function testIsReturnable()
@@ -79,9 +79,9 @@ class OrderTest extends TestCase
         $order = Order::retrieve(self::TEST_RESOURCE_ID);
         $this->expectsRequest(
             'post',
-            '/v1/orders/' . self::TEST_RESOURCE_ID . '/returns'
+            '/v1/orders/' . $order->id . '/returns'
         );
         $resource = $order->returnOrder();
-        $this->assertSame("Stripe\\OrderReturn", get_class($resource));
+        $this->assertInstanceOf("Stripe\\OrderReturn", $resource);
     }
 }
