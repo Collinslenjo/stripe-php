@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class BalanceTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\Balance
+ */
+final class BalanceTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     public function testIsRetrievable()
     {
         $this->expectsRequest(
@@ -11,6 +17,6 @@ class BalanceTest extends TestCase
             '/v1/balance'
         );
         $resource = Balance::retrieve();
-        $this->assertInstanceOf("Stripe\\Balance", $resource);
+        static::assertInstanceOf(\Stripe\Balance::class, $resource);
     }
 }

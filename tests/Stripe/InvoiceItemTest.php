@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class InvoiceItemTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\InvoiceItem
+ */
+final class InvoiceItemTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'ii_123';
 
     public function testIsListable()
@@ -13,8 +19,8 @@ class InvoiceItemTest extends TestCase
             '/v1/invoiceitems'
         );
         $resources = InvoiceItem::all();
-        $this->assertTrue(is_array($resources->data));
-        $this->assertInstanceOf("Stripe\\InvoiceItem", $resources->data[0]);
+        static::assertInternalType('array', $resources->data);
+        static::assertInstanceOf(\Stripe\InvoiceItem::class, $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,7 +30,7 @@ class InvoiceItemTest extends TestCase
             '/v1/invoiceitems/' . self::TEST_RESOURCE_ID
         );
         $resource = InvoiceItem::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\InvoiceItem", $resource);
+        static::assertInstanceOf(\Stripe\InvoiceItem::class, $resource);
     }
 
     public function testIsCreatable()
@@ -34,23 +40,23 @@ class InvoiceItemTest extends TestCase
             '/v1/invoiceitems'
         );
         $resource = InvoiceItem::create([
-            "amount" => 100,
-            "currency" => "usd",
-            "customer" => "cus_123"
+            'amount' => 100,
+            'currency' => 'usd',
+            'customer' => 'cus_123',
         ]);
-        $this->assertInstanceOf("Stripe\\InvoiceItem", $resource);
+        static::assertInstanceOf(\Stripe\InvoiceItem::class, $resource);
     }
 
     public function testIsSaveable()
     {
         $resource = InvoiceItem::retrieve(self::TEST_RESOURCE_ID);
-        $resource->metadata["key"] = "value";
+        $resource->metadata['key'] = 'value';
         $this->expectsRequest(
             'post',
             '/v1/invoiceitems/' . $resource->id
         );
         $resource->save();
-        $this->assertInstanceOf("Stripe\\InvoiceItem", $resource);
+        static::assertInstanceOf(\Stripe\InvoiceItem::class, $resource);
     }
 
     public function testIsUpdatable()
@@ -60,9 +66,9 @@ class InvoiceItemTest extends TestCase
             '/v1/invoiceitems/' . self::TEST_RESOURCE_ID
         );
         $resource = InvoiceItem::update(self::TEST_RESOURCE_ID, [
-            "metadata" => ["key" => "value"],
+            'metadata' => ['key' => 'value'],
         ]);
-        $this->assertInstanceOf("Stripe\\InvoiceItem", $resource);
+        static::assertInstanceOf(\Stripe\InvoiceItem::class, $resource);
     }
 
     public function testIsDeletable()
@@ -73,6 +79,6 @@ class InvoiceItemTest extends TestCase
             '/v1/invoiceitems/' . $invoiceItem->id
         );
         $resource = $invoiceItem->delete();
-        $this->assertInstanceOf("Stripe\\InvoiceItem", $resource);
+        static::assertInstanceOf(\Stripe\InvoiceItem::class, $resource);
     }
 }

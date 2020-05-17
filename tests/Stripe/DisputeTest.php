@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class DisputeTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\Dispute
+ */
+final class DisputeTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'dp_123';
 
     public function testIsListable()
@@ -13,8 +19,8 @@ class DisputeTest extends TestCase
             '/v1/disputes'
         );
         $resources = Dispute::all();
-        $this->assertTrue(is_array($resources->data));
-        $this->assertInstanceOf("Stripe\\Dispute", $resources->data[0]);
+        static::assertInternalType('array', $resources->data);
+        static::assertInstanceOf(\Stripe\Dispute::class, $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,19 +30,19 @@ class DisputeTest extends TestCase
             '/v1/disputes/' . self::TEST_RESOURCE_ID
         );
         $resource = Dispute::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\Dispute", $resource);
+        static::assertInstanceOf(\Stripe\Dispute::class, $resource);
     }
 
     public function testIsSaveable()
     {
         $resource = Dispute::retrieve(self::TEST_RESOURCE_ID);
-        $resource->metadata["key"] = "value";
+        $resource->metadata['key'] = 'value';
         $this->expectsRequest(
             'post',
             '/v1/disputes/' . $resource->id
         );
         $resource->save();
-        $this->assertInstanceOf("Stripe\\Dispute", $resource);
+        static::assertInstanceOf(\Stripe\Dispute::class, $resource);
     }
 
     public function testIsUpdatable()
@@ -46,9 +52,9 @@ class DisputeTest extends TestCase
             '/v1/disputes/' . self::TEST_RESOURCE_ID
         );
         $resource = Dispute::update(self::TEST_RESOURCE_ID, [
-            "metadata" => ["key" => "value"],
+            'metadata' => ['key' => 'value'],
         ]);
-        $this->assertInstanceOf("Stripe\\Dispute", $resource);
+        static::assertInstanceOf(\Stripe\Dispute::class, $resource);
     }
 
     public function testIsClosable()
@@ -59,7 +65,7 @@ class DisputeTest extends TestCase
             '/v1/disputes/' . $dispute->id . '/close'
         );
         $resource = $dispute->close();
-        $this->assertInstanceOf("Stripe\\Dispute", $resource);
-        $this->assertSame($resource, $dispute);
+        static::assertInstanceOf(\Stripe\Dispute::class, $resource);
+        static::assertSame($resource, $dispute);
     }
 }

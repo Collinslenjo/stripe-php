@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class PayoutTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\Payout
+ */
+final class PayoutTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'po_123';
 
     public function testIsListable()
@@ -13,8 +19,8 @@ class PayoutTest extends TestCase
             '/v1/payouts'
         );
         $resources = Payout::all();
-        $this->assertTrue(is_array($resources->data));
-        $this->assertInstanceOf("Stripe\\Payout", $resources->data[0]);
+        static::assertInternalType('array', $resources->data);
+        static::assertInstanceOf(\Stripe\Payout::class, $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,7 +30,7 @@ class PayoutTest extends TestCase
             '/v1/payouts/' . self::TEST_RESOURCE_ID
         );
         $resource = Payout::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\Payout", $resource);
+        static::assertInstanceOf(\Stripe\Payout::class, $resource);
     }
 
     public function testIsCreatable()
@@ -34,22 +40,22 @@ class PayoutTest extends TestCase
             '/v1/payouts'
         );
         $resource = Payout::create([
-            "amount" => 100,
-            "currency" => "usd"
+            'amount' => 100,
+            'currency' => 'usd',
         ]);
-        $this->assertInstanceOf("Stripe\\Payout", $resource);
+        static::assertInstanceOf(\Stripe\Payout::class, $resource);
     }
 
     public function testIsSaveable()
     {
         $resource = Payout::retrieve(self::TEST_RESOURCE_ID);
-        $resource->metadata["key"] = "value";
+        $resource->metadata['key'] = 'value';
         $this->expectsRequest(
             'post',
             '/v1/payouts/' . $resource->id
         );
         $resource->save();
-        $this->assertInstanceOf("Stripe\\Payout", $resource);
+        static::assertInstanceOf(\Stripe\Payout::class, $resource);
     }
 
     public function testIsUpdatable()
@@ -59,9 +65,9 @@ class PayoutTest extends TestCase
             '/v1/payouts/' . self::TEST_RESOURCE_ID
         );
         $resource = Payout::update(self::TEST_RESOURCE_ID, [
-            "metadata" => ["key" => "value"],
+            'metadata' => ['key' => 'value'],
         ]);
-        $this->assertInstanceOf("Stripe\\Payout", $resource);
+        static::assertInstanceOf(\Stripe\Payout::class, $resource);
     }
 
     public function testIsCancelable()
@@ -72,6 +78,6 @@ class PayoutTest extends TestCase
             '/v1/payouts/' . $resource->id . '/cancel'
         );
         $resource->cancel();
-        $this->assertInstanceOf("Stripe\\Payout", $resource);
+        static::assertInstanceOf(\Stripe\Payout::class, $resource);
     }
 }

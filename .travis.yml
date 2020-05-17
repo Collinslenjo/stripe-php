@@ -1,29 +1,53 @@
 sudo: false
 
+dist: bionic
+
 language: php
 
-php:
-  - 5.4
-  - 5.5
-  - 5.6
-  - 7.0
-  - 7.1
-  - 7.2
-  - hhvm
+matrix:
+  include:
+    - php: 5.6
+      env: AUTOLOAD=1
+      dist: xenial
+    - php: 5.6
+      env: AUTOLOAD=0
+      dist: xenial
+    - php: 7.0
+      env: AUTOLOAD=1
+      dist: xenial
+    - php: 7.0
+      env: AUTOLOAD=0
+      dist: xenial
+    - php: 7.1
+      env: AUTOLOAD=1
+    - php: 7.1
+      env: AUTOLOAD=0
+    - php: 7.2
+      env: AUTOLOAD=1
+    - php: 7.2
+      env: AUTOLOAD=0
+    - php: 7.3
+      env: AUTOLOAD=1
+    - php: 7.3
+      env: AUTOLOAD=0
+    - php: 7.4
+      env: AUTOLOAD=1
+    - php: 7.4
+      env: AUTOLOAD=0
 
 env:
   global:
-    - STRIPE_MOCK_VERSION=0.8.0
-  matrix:
-    - AUTOLOAD=1
-    - AUTOLOAD=0
-
+    - STRIPE_MOCK_VERSION=0.90.0
 cache:
   directories:
     - $HOME/.composer/cache/files
     - stripe-mock
 
 before_install:
+  # Install various build dependencies. We use `travis_retry` because Composer
+  # will occasionally fail intermittently.
+  - travis_retry make vendor
+
   # Unpack and start stripe-mock so that the test suite can talk to it
   - |
     if [ ! -d "stripe-mock/stripe-mock_${STRIPE_MOCK_VERSION}" ]; then
@@ -34,7 +58,11 @@ before_install:
   - |
     stripe-mock/stripe-mock_${STRIPE_MOCK_VERSION}/stripe-mock > /dev/null &
     STRIPE_MOCK_PID=$!
+  - export PATH="${PATH}:${PWD}/stripe-mock/stripe-mock_${STRIPE_MOCK_VERSION}"
 
-script: ./build.php ${AUTOLOAD}
+script:
+  - ./build.php ${AUTOLOAD}
+  - make fmtcheck
+  - if [[ `php -r "echo \version_compare(PHP_VERSION, '7.1', '>=');"` && $AUTOLOAD == 1 ]]; then make phpstan; fi
 
-after_script: ./vendor/bin/coveralls -v
+after_script: ./vendor/bin/php-coveralls -v

@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class AlipayAccountTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\AlipayAccount
+ */
+final class AlipayAccountTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'aliacc_123';
 
     // Because of the wildcard nature of sources, stripe-mock cannot currently
@@ -18,8 +24,9 @@ class AlipayAccountTest extends TestCase
             'object' => 'card',
             'metadata' => [],
         ];
+
         return AlipayAccount::constructFrom(
-            array_merge($params, $base),
+            \array_merge($params, $base),
             new Util\RequestOptions()
         );
     }
@@ -27,39 +34,37 @@ class AlipayAccountTest extends TestCase
     public function testHasCorrectUrlForCustomer()
     {
         $resource = $this->createFixture(['customer' => 'cus_123']);
-        $this->assertSame(
-            "/v1/customers/cus_123/sources/" . self::TEST_RESOURCE_ID,
+        static::assertSame(
+            '/v1/customers/cus_123/sources/' . self::TEST_RESOURCE_ID,
             $resource->instanceUrl()
         );
     }
 
-    /**
-     * @expectedException \Stripe\Error\InvalidRequest
-     */
     public function testIsNotDirectlyRetrievable()
     {
+        $this->expectException(\Stripe\Exception\BadMethodCallException::class);
+
         AlipayAccount::retrieve(self::TEST_RESOURCE_ID);
     }
 
     public function testIsSaveable()
     {
         $resource = $this->createFixture();
-        $resource->metadata["key"] = "value";
+        $resource->metadata['key'] = 'value';
         $this->expectsRequest(
             'post',
             '/v1/customers/cus_123/sources/' . self::TEST_RESOURCE_ID
         );
         $resource->save();
-        $this->assertSame("Stripe\\AlipayAccount", get_class($resource));
+        static::assertSame(\Stripe\AlipayAccount::class, \get_class($resource));
     }
 
-    /**
-     * @expectedException \Stripe\Error\InvalidRequest
-     */
     public function testIsNotDirectlyUpdatable()
     {
+        $this->expectException(\Stripe\Exception\BadMethodCallException::class);
+
         AlipayAccount::update(self::TEST_RESOURCE_ID, [
-            "metadata" => ["key" => "value"],
+            'metadata' => ['key' => 'value'],
         ]);
     }
 
@@ -71,6 +76,6 @@ class AlipayAccountTest extends TestCase
             '/v1/customers/cus_123/sources/' . self::TEST_RESOURCE_ID
         );
         $resource->delete();
-        $this->assertSame("Stripe\\AlipayAccount", get_class($resource));
+        static::assertSame(\Stripe\AlipayAccount::class, \get_class($resource));
     }
 }

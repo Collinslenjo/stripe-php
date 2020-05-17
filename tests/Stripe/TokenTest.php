@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class TokenTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\Token
+ */
+final class TokenTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'tok_123';
 
     public function testIsRetrievable()
@@ -13,7 +19,7 @@ class TokenTest extends TestCase
             '/v1/tokens/' . self::TEST_RESOURCE_ID
         );
         $resource = Token::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\Token", $resource);
+        static::assertInstanceOf(\Stripe\Token::class, $resource);
     }
 
     public function testIsCreatable()
@@ -22,7 +28,7 @@ class TokenTest extends TestCase
             'post',
             '/v1/tokens'
         );
-        $resource = Token::create(["card" => "tok_visa"]);
-        $this->assertInstanceOf("Stripe\\Token", $resource);
+        $resource = Token::create(['card' => 'tok_visa']);
+        static::assertInstanceOf(\Stripe\Token::class, $resource);
     }
 }

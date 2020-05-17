@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class ApplePayDomainTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\ApplePayDomain
+ */
+final class ApplePayDomainTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'apwc_123';
 
     public function testIsListable()
@@ -13,8 +19,8 @@ class ApplePayDomainTest extends TestCase
             '/v1/apple_pay/domains'
         );
         $resources = ApplePayDomain::all();
-        $this->assertTrue(is_array($resources->data));
-        $this->assertInstanceOf("Stripe\\ApplePayDomain", $resources->data[0]);
+        static::assertInternalType('array', $resources->data);
+        static::assertInstanceOf(\Stripe\ApplePayDomain::class, $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,7 +30,7 @@ class ApplePayDomainTest extends TestCase
             '/v1/apple_pay/domains/' . self::TEST_RESOURCE_ID
         );
         $resource = ApplePayDomain::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\ApplePayDomain", $resource);
+        static::assertInstanceOf(\Stripe\ApplePayDomain::class, $resource);
     }
 
     public function testIsCreatable()
@@ -34,9 +40,9 @@ class ApplePayDomainTest extends TestCase
             '/v1/apple_pay/domains'
         );
         $resource = ApplePayDomain::create([
-            "domain_name" => "domain",
+            'domain_name' => 'domain',
         ]);
-        $this->assertInstanceOf("Stripe\\ApplePayDomain", $resource);
+        static::assertInstanceOf(\Stripe\ApplePayDomain::class, $resource);
     }
 
     public function testIsDeletable()
@@ -47,6 +53,6 @@ class ApplePayDomainTest extends TestCase
             '/v1/apple_pay/domains/' . $resource->id
         );
         $resource->delete();
-        $this->assertInstanceOf("Stripe\\ApplePayDomain", $resource);
+        static::assertInstanceOf(\Stripe\ApplePayDomain::class, $resource);
     }
 }

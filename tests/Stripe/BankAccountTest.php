@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class BankAccountTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\BankAccount
+ */
+final class BankAccountTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'ba_123';
 
     // Because of the wildcard nature of sources, stripe-mock cannot currently
@@ -18,8 +24,9 @@ class BankAccountTest extends TestCase
             'object' => 'bank_account',
             'metadata' => [],
         ];
+
         return BankAccount::constructFrom(
-            array_merge($params, $base),
+            \array_merge($params, $base),
             new Util\RequestOptions()
         );
     }
@@ -27,8 +34,8 @@ class BankAccountTest extends TestCase
     public function testHasCorrectUrlForCustomer()
     {
         $resource = $this->createFixture(['customer' => 'cus_123']);
-        $this->assertSame(
-            "/v1/customers/cus_123/sources/" . self::TEST_RESOURCE_ID,
+        static::assertSame(
+            '/v1/customers/cus_123/sources/' . self::TEST_RESOURCE_ID,
             $resource->instanceUrl()
         );
     }
@@ -36,39 +43,37 @@ class BankAccountTest extends TestCase
     public function testHasCorrectUrlForAccount()
     {
         $resource = $this->createFixture(['account' => 'acct_123']);
-        $this->assertSame(
-            "/v1/accounts/acct_123/external_accounts/" . self::TEST_RESOURCE_ID,
+        static::assertSame(
+            '/v1/accounts/acct_123/external_accounts/' . self::TEST_RESOURCE_ID,
             $resource->instanceUrl()
         );
     }
 
-    /**
-     * @expectedException \Stripe\Error\InvalidRequest
-     */
     public function testIsNotDirectlyRetrievable()
     {
+        $this->expectException(\Stripe\Exception\BadMethodCallException::class);
+
         BankAccount::retrieve(self::TEST_RESOURCE_ID);
     }
 
     public function testIsSaveable()
     {
         $resource = $this->createFixture();
-        $resource->metadata["key"] = "value";
+        $resource->metadata['key'] = 'value';
         $this->expectsRequest(
             'post',
             '/v1/customers/cus_123/sources/' . self::TEST_RESOURCE_ID
         );
         $resource->save();
-        $this->assertSame("Stripe\\BankAccount", get_class($resource));
+        static::assertSame(\Stripe\BankAccount::class, \get_class($resource));
     }
 
-    /**
-     * @expectedException \Stripe\Error\InvalidRequest
-     */
     public function testIsNotDirectlyUpdatable()
     {
+        $this->expectException(\Stripe\Exception\BadMethodCallException::class);
+
         BankAccount::update(self::TEST_RESOURCE_ID, [
-            "metadata" => ["key" => "value"],
+            'metadata' => ['key' => 'value'],
         ]);
     }
 
@@ -80,7 +85,7 @@ class BankAccountTest extends TestCase
             '/v1/customers/cus_123/sources/' . self::TEST_RESOURCE_ID
         );
         $resource->delete();
-        $this->assertSame("Stripe\\BankAccount", get_class($resource));
+        static::assertSame(\Stripe\BankAccount::class, \get_class($resource));
     }
 
     public function testIsVerifiable()
@@ -88,12 +93,12 @@ class BankAccountTest extends TestCase
         $resource = $this->createFixture();
         $this->expectsRequest(
             'post',
-            '/v1/customers/cus_123/sources/' . self::TEST_RESOURCE_ID . "/verify",
+            '/v1/customers/cus_123/sources/' . self::TEST_RESOURCE_ID . '/verify',
             [
-                "amounts" => [1, 2]
+                'amounts' => [1, 2],
             ]
         );
-        $resource->verify(["amounts" => [1, 2]]);
-        $this->assertInstanceOf("Stripe\\BankAccount", $resource);
+        $resource->verify(['amounts' => [1, 2]]);
+        static::assertInstanceOf(\Stripe\BankAccount::class, $resource);
     }
 }

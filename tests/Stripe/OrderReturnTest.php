@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class OrderReturnTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\OrderReturn
+ */
+final class OrderReturnTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'orret_123';
 
     public function testIsListable()
@@ -13,8 +19,8 @@ class OrderReturnTest extends TestCase
             '/v1/order_returns'
         );
         $resources = OrderReturn::all();
-        $this->assertTrue(is_array($resources->data));
-        $this->assertInstanceOf("Stripe\\OrderReturn", $resources->data[0]);
+        static::assertInternalType('array', $resources->data);
+        static::assertInstanceOf(\Stripe\OrderReturn::class, $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,6 +30,6 @@ class OrderReturnTest extends TestCase
             '/v1/order_returns/' . self::TEST_RESOURCE_ID
         );
         $resource = OrderReturn::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\OrderReturn", $resource);
+        static::assertInstanceOf(\Stripe\OrderReturn::class, $resource);
     }
 }

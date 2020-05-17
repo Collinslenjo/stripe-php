@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class ThreeDSecureTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\ThreeDSecure
+ */
+final class ThreeDSecureTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'tdsrc_123';
 
     public function testIsRetrievable()
@@ -13,7 +19,7 @@ class ThreeDSecureTest extends TestCase
             '/v1/3d_secure/' . self::TEST_RESOURCE_ID
         );
         $resource = ThreeDSecure::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\ThreeDSecure", $resource);
+        static::assertInstanceOf(\Stripe\ThreeDSecure::class, $resource);
     }
 
     public function testIsCreatable()
@@ -23,10 +29,10 @@ class ThreeDSecureTest extends TestCase
             '/v1/3d_secure'
         );
         $resource = ThreeDSecure::create([
-            "amount" => 100,
-            "currency" => "usd",
-            "return_url" => "url"
+            'amount' => 100,
+            'currency' => 'usd',
+            'return_url' => 'url',
         ]);
-        $this->assertInstanceOf("Stripe\\ThreeDSecure", $resource);
+        static::assertInstanceOf(\Stripe\ThreeDSecure::class, $resource);
     }
 }

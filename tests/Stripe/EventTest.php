@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class EventTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\Event
+ */
+final class EventTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'evt_123';
 
     public function testIsListable()
@@ -13,8 +19,8 @@ class EventTest extends TestCase
             '/v1/events'
         );
         $resources = Event::all();
-        $this->assertTrue(is_array($resources->data));
-        $this->assertInstanceOf("Stripe\\Event", $resources->data[0]);
+        static::assertInternalType('array', $resources->data);
+        static::assertInstanceOf(\Stripe\Event::class, $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,6 +30,6 @@ class EventTest extends TestCase
             '/v1/events/' . self::TEST_RESOURCE_ID
         );
         $resource = Event::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\Event", $resource);
+        static::assertInstanceOf(\Stripe\Event::class, $resource);
     }
 }

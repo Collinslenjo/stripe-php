@@ -1,16 +1,22 @@
 <?php
 
-namespace Stripe;
+namespace Stripe\Util;
 
-class UtilTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\Util\Util
+ */
+final class UtilTest extends \PHPUnit\Framework\TestCase
 {
+    use \Stripe\TestHelper;
+
     public function testIsList()
     {
         $list = [5, 'nstaoush', []];
-        $this->assertTrue(Util\Util::isList($list));
+        static::assertTrue(Util::isList($list));
 
         $notlist = [5, 'nstaoush', [], 'bar' => 'baz'];
-        $this->assertFalse(Util\Util::isList($notlist));
+        static::assertFalse(Util::isList($notlist));
     }
 
     public function testThatPHPHasValueSemanticsForArrays()
@@ -19,72 +25,116 @@ class UtilTest extends TestCase
         $derived = $original;
         $derived['php-arrays'] = 'reference-semantics';
 
-        $this->assertSame('value-semantics', $original['php-arrays']);
+        static::assertSame('value-semantics', $original['php-arrays']);
     }
 
     public function testConvertStripeObjectToArrayIncludesId()
     {
-        $customer = Util\Util::convertToStripeObject([
-            'id' => 'cus_123',
-            'object' => 'customer',
-        ], null);
-        $this->assertTrue(array_key_exists("id", $customer->__toArray(true)));
+        $customer = Util::convertToStripeObject(
+            [
+                'id' => 'cus_123',
+                'object' => 'customer',
+            ],
+            null
+        );
+        static::assertArrayHasKey('id', $customer->toArray());
     }
 
     public function testUtf8()
     {
         // UTF-8 string
         $x = "\xc3\xa9";
-        $this->assertSame(Util\Util::utf8($x), $x);
+        static::assertSame(Util::utf8($x), $x);
 
         // Latin-1 string
         $x = "\xe9";
-        $this->assertSame(Util\Util::utf8($x), "\xc3\xa9");
+        static::assertSame(Util::utf8($x), "\xc3\xa9");
 
         // Not a string
         $x = true;
-        $this->assertSame(Util\Util::utf8($x), $x);
+        static::assertSame(Util::utf8($x), $x);
+    }
+
+    public function testObjectsToIds()
+    {
+        $params = [
+            'foo' => 'bar',
+            'customer' => Util::convertToStripeObject(
+                [
+                    'id' => 'cus_123',
+                    'object' => 'customer',
+                ],
+                null
+            ),
+            'null_value' => null,
+        ];
+
+        static::assertSame(
+            [
+                'foo' => 'bar',
+                'customer' => 'cus_123',
+            ],
+            Util::objectsToIds($params)
+        );
+    }
+
+    public function testEncodeParameters()
+    {
+        $params = [
+            'a' => 3,
+            'b' => '+foo?',
+            'c' => 'bar&baz',
+            'd' => ['a' => 'a', 'b' => 'b'],
+            'e' => [0, 1],
+            'f' => '',
+
+            // note the empty hash won't even show up in the request
+            'g' => [],
+        ];
+
+        static::assertSame(
+            'a=3&b=%2Bfoo%3F&c=bar%26baz&d[a]=a&d[b]=b&e[0]=0&e[1]=1&f=',
+            Util::encodeParameters($params)
+        );
     }
 
     public function testUrlEncode()
     {
-        $a = [
-            'my' => 'value',
-            'that' => ['your' => 'example'],
-            'bar' => 1,
-            'baz' => null
+        static::assertSame('foo', Util::urlEncode('foo'));
+        static::assertSame('foo%2B', Util::urlEncode('foo+'));
+        static::assertSame('foo%26', Util::urlEncode('foo&'));
+        static::assertSame('foo[bar]', Util::urlEncode('foo[bar]'));
+    }
+
+    public function testFlattenParams()
+    {
+        $params = [
+            'a' => 3,
+            'b' => '+foo?',
+            'c' => 'bar&baz',
+            'd' => ['a' => 'a', 'b' => 'b'],
+            'e' => [0, 1],
+            'f' => [
+                ['foo' => '1', 'ghi' => '2'],
+                ['foo' => '3', 'bar' => '4'],
+            ],
         ];
 
-        $enc = Util\Util::urlEncode($a);
-        $this->assertSame('my=value&that%5Byour%5D=example&bar=1', $enc);
-
-        $a = ['that' => ['your' => 'example', 'foo' => null]];
-        $enc = Util\Util::urlEncode($a);
-        $this->assertSame('that%5Byour%5D=example', $enc);
-
-        $a = ['that' => 'example', 'foo' => ['bar', 'baz']];
-        $enc = Util\Util::urlEncode($a);
-        $this->assertSame('that=example&foo%5B%5D=bar&foo%5B%5D=baz', $enc);
-
-        $a = [
-            'my' => 'value',
-            'that' => ['your' => ['cheese', 'whiz', null]],
-            'bar' => 1,
-            'baz' => null
-        ];
-
-        $enc = Util\Util::urlEncode($a);
-        $expected = 'my=value&that%5Byour%5D%5B%5D=cheese'
-              . '&that%5Byour%5D%5B%5D=whiz&bar=1';
-        $this->assertSame($expected, $enc);
-
-        // Ignores an empty array
-        $enc = Util\Util::urlEncode(['foo' => [], 'bar' => 'baz']);
-        $expected = 'bar=baz';
-        $this->assertSame($expected, $enc);
-
-        $a = ['foo' => [['bar' => 'baz'], ['bar' => 'bin']]];
-        $enc = Util\Util::urlEncode($a);
-        $this->assertSame('foo%5B0%5D%5Bbar%5D=baz&foo%5B1%5D%5Bbar%5D=bin', $enc);
+        static::assertSame(
+            [
+                ['a', 3],
+                ['b', '+foo?'],
+                ['c', 'bar&baz'],
+                ['d[a]', 'a'],
+                ['d[b]', 'b'],
+                ['e[0]', 0],
+                ['e[1]', 1],
+                ['f[0][foo]', '1'],
+                ['f[0][ghi]', '2'],
+                ['f[1][foo]', '3'],
+                ['f[1][bar]', '4'],
+            ],
+            Util::flattenParams($params)
+        );
     }
 }

@@ -2,8 +2,14 @@
 
 namespace Stripe;
 
-class TopupTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\Topup
+ */
+final class TopupTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
     const TEST_RESOURCE_ID = 'tu_123';
 
     public function testIsListable()
@@ -13,8 +19,8 @@ class TopupTest extends TestCase
             '/v1/topups'
         );
         $resources = Topup::all();
-        $this->assertTrue(is_array($resources->data));
-        $this->assertInstanceOf("Stripe\\Topup", $resources->data[0]);
+        static::assertInternalType('array', $resources->data);
+        static::assertInstanceOf(\Stripe\Topup::class, $resources->data[0]);
     }
 
     public function testIsRetrievable()
@@ -24,7 +30,7 @@ class TopupTest extends TestCase
             '/v1/topups/' . self::TEST_RESOURCE_ID
         );
         $resource = Topup::retrieve(self::TEST_RESOURCE_ID);
-        $this->assertInstanceOf("Stripe\\Topup", $resource);
+        static::assertInstanceOf(\Stripe\Topup::class, $resource);
     }
 
     public function testIsCreatable()
@@ -34,25 +40,25 @@ class TopupTest extends TestCase
             '/v1/topups'
         );
         $resource = Topup::create([
-            "amount" => 100,
-            "currency" => "usd",
-            "source" => "tok_123",
-            "description" => "description",
-            "statement_descriptor" => "statement descriptor"
+            'amount' => 100,
+            'currency' => 'usd',
+            'source' => 'tok_123',
+            'description' => 'description',
+            'statement_descriptor' => 'statement descriptor',
         ]);
-        $this->assertInstanceOf("Stripe\\Topup", $resource);
+        static::assertInstanceOf(\Stripe\Topup::class, $resource);
     }
 
     public function testIsSaveable()
     {
         $resource = Topup::retrieve(self::TEST_RESOURCE_ID);
-        $resource->metadata["key"] = "value";
+        $resource->metadata['key'] = 'value';
         $this->expectsRequest(
             'post',
             '/v1/topups/' . $resource->id
         );
         $resource->save();
-        $this->assertInstanceOf("Stripe\\Topup", $resource);
+        static::assertInstanceOf(\Stripe\Topup::class, $resource);
     }
 
     public function testIsUpdatable()
@@ -62,8 +68,19 @@ class TopupTest extends TestCase
             '/v1/topups/' . self::TEST_RESOURCE_ID
         );
         $resource = Topup::update(self::TEST_RESOURCE_ID, [
-            "metadata" => ["key" => "value"],
+            'metadata' => ['key' => 'value'],
         ]);
-        $this->assertInstanceOf("Stripe\\Topup", $resource);
+        static::assertInstanceOf(\Stripe\Topup::class, $resource);
+    }
+
+    public function testIsCancelable()
+    {
+        $resource = Topup::retrieve(self::TEST_RESOURCE_ID);
+        $this->expectsRequest(
+            'post',
+            '/v1/topups/' . self::TEST_RESOURCE_ID . '/cancel'
+        );
+        $resource = $resource->cancel();
+        static::assertInstanceOf(\Stripe\Topup::class, $resource);
     }
 }

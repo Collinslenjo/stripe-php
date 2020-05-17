@@ -2,8 +2,17 @@
 
 namespace Stripe;
 
-class StripeTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\Stripe
+ */
+final class StripeTest extends \PHPUnit\Framework\TestCase
 {
+    use TestHelper;
+
+    /** @var array */
+    protected $orig;
+
     /**
      * @before
      */
@@ -25,6 +34,6 @@ class StripeTest extends TestCase
     public function testCABundlePathAccessors()
     {
         Stripe::setCABundlePath('path/to/ca/bundle');
-        $this->assertEquals('path/to/ca/bundle', Stripe::getCABundlePath());
+        static::assertSame('path/to/ca/bundle', Stripe::getCABundlePath());
     }
 }

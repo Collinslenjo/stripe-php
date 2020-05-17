@@ -1,19 +1,44 @@
 <?php
 
-namespace Stripe;
+namespace Stripe\HttpClient;
 
-use Stripe\HttpClient\CurlClient;
-
-class CurlClientTest extends TestCase
+/**
+ * @internal
+ * @covers \Stripe\HttpClient\CurlClient
+ */
+final class CurlClientTest extends \PHPUnit\Framework\TestCase
 {
+    use \Stripe\TestHelper;
+
+    /** @var \ReflectionProperty */
+    private $initialNetworkRetryDelayProperty;
+
+    /** @var \ReflectionProperty */
+    private $maxNetworkRetryDelayProperty;
+
+    /** @var float */
+    private $origInitialNetworkRetryDelay;
+
+    /** @var int */
+    private $origMaxNetworkRetries;
+
+    /** @var float */
+    private $origMaxNetworkRetryDelay;
+
+    /** @var \ReflectionMethod */
+    private $sleepTimeMethod;
+
+    /** @var \ReflectionMethod */
+    private $shouldRetryMethod;
+
     /**
      * @before
      */
     public function saveOriginalNetworkValues()
     {
-        $this->origMaxNetworkRetries = Stripe::getMaxNetworkRetries();
-        $this->origMaxNetworkRetryDelay = Stripe::getMaxNetworkRetryDelay();
-        $this->origInitialNetworkRetryDelay = Stripe::getInitialNetworkRetryDelay();
+        $this->origMaxNetworkRetries = \Stripe\Stripe::getMaxNetworkRetries();
+        $this->origMaxNetworkRetryDelay = \Stripe\Stripe::getMaxNetworkRetryDelay();
+        $this->origInitialNetworkRetryDelay = \Stripe\Stripe::getInitialNetworkRetryDelay();
     }
 
     /**
@@ -29,7 +54,7 @@ class CurlClientTest extends TestCase
         $this->initialNetworkRetryDelayProperty = $stripeReflector->getProperty('initialNetworkRetryDelay');
         $this->initialNetworkRetryDelayProperty->setAccessible(true);
 
-        $curlClientReflector = new \ReflectionClass('Stripe\HttpClient\CurlClient');
+        $curlClientReflector = new \ReflectionClass('\Stripe\HttpClient\CurlClient');
 
         $this->shouldRetryMethod = $curlClientReflector->getMethod('shouldRetry');
         $this->shouldRetryMethod->setAccessible(true);
@@ -43,7 +68,7 @@ class CurlClientTest extends TestCase
      */
     public function restoreOriginalNetworkValues()
     {
-        Stripe::setMaxNetworkRetries($this->origMaxNetworkRetries);
+        \Stripe\Stripe::setMaxNetworkRetries($this->origMaxNetworkRetries);
         $this->setMaxNetworkRetryDelay($this->origMaxNetworkRetryDelay);
         $this->setInitialNetworkRetryDelay($this->origInitialNetworkRetryDelay);
     }
@@ -60,169 +85,271 @@ class CurlClientTest extends TestCase
 
     private function createFakeRandomGenerator($returnValue = 1.0)
     {
-        $fakeRandomGenerator = $this->getMock('Stripe\Util\RandomGenetator', ['randFloat']);
+        $fakeRandomGenerator = $this->createMock('\Stripe\Util\RandomGenerator');
         $fakeRandomGenerator->method('randFloat')->willReturn($returnValue);
+
         return $fakeRandomGenerator;
     }
 
     public function testTimeout()
     {
         $curl = new CurlClient();
-        $this->assertSame(CurlClient::DEFAULT_TIMEOUT, $curl->getTimeout());
-        $this->assertSame(CurlClient::DEFAULT_CONNECT_TIMEOUT, $curl->getConnectTimeout());
+        static::assertSame(CurlClient::DEFAULT_TIMEOUT, $curl->getTimeout());
+        static::assertSame(CurlClient::DEFAULT_CONNECT_TIMEOUT, $curl->getConnectTimeout());
 
         // implicitly tests whether we're returning the CurlClient instance
         $curl = $curl->setConnectTimeout(1)->setTimeout(10);
-        $this->assertSame(1, $curl->getConnectTimeout());
-        $this->assertSame(10, $curl->getTimeout());
+        static::assertSame(1, $curl->getConnectTimeout());
+        static::assertSame(10, $curl->getTimeout());
 
         $curl->setTimeout(-1);
         $curl->setConnectTimeout(-999);
-        $this->assertSame(0, $curl->getTimeout());
-        $this->assertSame(0, $curl->getConnectTimeout());
+        static::assertSame(0, $curl->getTimeout());
+        static::assertSame(0, $curl->getConnectTimeout());
     }
 
     public function testUserAgentInfo()
     {
         $curl = new CurlClient();
         $uaInfo = $curl->getUserAgentInfo();
-        $this->assertNotNull($uaInfo);
-        $this->assertNotNull($uaInfo['httplib']);
-        $this->assertNotNull($uaInfo['ssllib']);
+        static::assertNotNull($uaInfo);
+        static::assertNotNull($uaInfo['httplib']);
+        static::assertNotNull($uaInfo['ssllib']);
     }
 
     public function testDefaultOptions()
     {
         // make sure options array loads/saves properly
-        $optionsArray = [CURLOPT_PROXY => 'localhost:80'];
+        $optionsArray = [\CURLOPT_PROXY => 'localhost:80'];
         $withOptionsArray = new CurlClient($optionsArray);
-        $this->assertSame($withOptionsArray->getDefaultOptions(), $optionsArray);
+        static::assertSame($withOptionsArray->getDefaultOptions(), $optionsArray);
 
         // make sure closure-based options work properly, including argument passing
         $ref = null;
         $withClosure = new CurlClient(function ($method, $absUrl, $headers, $params, $hasFile) use (&$ref) {
-            $ref = func_get_args();
+            $ref = \func_get_args();
+
             return [];
         });
 
         $withClosure->request('get', 'https://httpbin.org/status/200', [], [], false);
-        $this->assertSame($ref, ['get', 'https://httpbin.org/status/200', [], [], false]);
+        static::assertSame($ref, ['get', 'https://httpbin.org/status/200', [], [], false]);
 
         // this is the last test case that will run, since it'll throw an exception at the end
         $withBadClosure = new CurlClient(function () {
             return 'thisShouldNotWork';
         });
-        $this->setExpectedException('Stripe\Error\Api', "Non-array value returned by defaultOptions CurlClient callback");
+        $this->expectException('Stripe\Exception\UnexpectedValueException');
+        $this->expectExceptionMessage('Non-array value returned by defaultOptions CurlClient callback');
         $withBadClosure->request('get', 'https://httpbin.org/status/200', [], [], false);
     }
 
     public function testSslOption()
     {
         // make sure options array loads/saves properly
-        $optionsArray = [CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1];
+        $optionsArray = [\CURLOPT_SSLVERSION => \CURL_SSLVERSION_TLSv1];
         $withOptionsArray = new CurlClient($optionsArray);
-        $this->assertSame($withOptionsArray->getDefaultOptions(), $optionsArray);
+        static::assertSame($withOptionsArray->getDefaultOptions(), $optionsArray);
     }
 
     public function testShouldRetryOnTimeout()
     {
-        Stripe::setMaxNetworkRetries(2);
+        \Stripe\Stripe::setMaxNetworkRetries(2);
 
         $curlClient = new CurlClient();
 
-        $this->assertTrue($this->shouldRetryMethod->invoke($curlClient, CURLE_OPERATION_TIMEOUTED, 0, 0));
+        static::assertTrue($this->shouldRetryMethod->invoke($curlClient, \CURLE_OPERATION_TIMEOUTED, 0, [], 0));
     }
 
     public function testShouldRetryOnConnectionFailure()
     {
-        Stripe::setMaxNetworkRetries(2);
+        \Stripe\Stripe::setMaxNetworkRetries(2);
 
         $curlClient = new CurlClient();
 
-        $this->assertTrue($this->shouldRetryMethod->invoke($curlClient, CURLE_COULDNT_CONNECT, 0, 0));
+        static::assertTrue($this->shouldRetryMethod->invoke($curlClient, \CURLE_COULDNT_CONNECT, 0, [], 0));
     }
 
     public function testShouldRetryOnConflict()
     {
-        Stripe::setMaxNetworkRetries(2);
+        \Stripe\Stripe::setMaxNetworkRetries(2);
 
         $curlClient = new CurlClient();
 
-        $this->assertTrue($this->shouldRetryMethod->invoke($curlClient, 0, 409, 0));
+        static::assertTrue($this->shouldRetryMethod->invoke($curlClient, 0, 409, [], 0));
+    }
+
+    public function testShouldNotRetryOn429()
+    {
+        \Stripe\Stripe::setMaxNetworkRetries(2);
+
+        $curlClient = new CurlClient();
+
+        static::assertFalse($this->shouldRetryMethod->invoke($curlClient, 0, 429, [], 0));
+    }
+
+    public function testShouldRetryOn500()
+    {
+        \Stripe\Stripe::setMaxNetworkRetries(2);
+
+        $curlClient = new CurlClient();
+
+        static::assertTrue($this->shouldRetryMethod->invoke($curlClient, 0, 500, [], 0));
+    }
+
+    public function testShouldRetryOn503()
+    {
+        \Stripe\Stripe::setMaxNetworkRetries(2);
+
+        $curlClient = new CurlClient();
+
+        static::assertTrue($this->shouldRetryMethod->invoke($curlClient, 0, 503, [], 0));
+    }
+
+    public function testShouldRetryOnStripeShouldRetryTrue()
+    {
+        \Stripe\Stripe::setMaxNetworkRetries(2);
+
+        $curlClient = new CurlClient();
+
+        static::assertFalse($this->shouldRetryMethod->invoke($curlClient, 0, 400, [], 0));
+        static::assertTrue($this->shouldRetryMethod->invoke($curlClient, 0, 400, ['stripe-should-retry' => 'true'], 0));
+    }
+
+    public function testShouldNotRetryOnStripeShouldRetryFalse()
+    {
+        \Stripe\Stripe::setMaxNetworkRetries(2);
+
+        $curlClient = new CurlClient();
+
+        static::assertTrue($this->shouldRetryMethod->invoke($curlClient, 0, 500, [], 0));
+        static::assertFalse($this->shouldRetryMethod->invoke($curlClient, 0, 500, ['stripe-should-retry' => 'false'], 0));
     }
 
     public function testShouldNotRetryAtMaximumCount()
     {
-        Stripe::setMaxNetworkRetries(2);
+        \Stripe\Stripe::setMaxNetworkRetries(2);
 
         $curlClient = new CurlClient();
 
-        $this->assertFalse($this->shouldRetryMethod->invoke($curlClient, 0, 0, Stripe::getMaxNetworkRetries()));
+        static::assertFalse($this->shouldRetryMethod->invoke($curlClient, 0, 0, [], \Stripe\Stripe::getMaxNetworkRetries()));
     }
 
     public function testShouldNotRetryOnCertValidationError()
     {
-        Stripe::setMaxNetworkRetries(2);
+        \Stripe\Stripe::setMaxNetworkRetries(2);
 
         $curlClient = new CurlClient();
 
-        $this->assertFalse($this->shouldRetryMethod->invoke($curlClient, CURLE_SSL_PEER_CERTIFICATE, -1, 0));
+        static::assertFalse($this->shouldRetryMethod->invoke($curlClient, \CURLE_SSL_PEER_CERTIFICATE, -1, [], 0));
     }
 
     public function testSleepTimeShouldGrowExponentially()
     {
-        $this->setMaxNetworkRetryDelay(999);
+        $this->setMaxNetworkRetryDelay(999.0);
 
         $curlClient = new CurlClient(null, $this->createFakeRandomGenerator());
 
-        $this->assertEquals(
-            Stripe::getInitialNetworkRetryDelay() * 1,
-            $this->sleepTimeMethod->invoke($curlClient, 1)
+        static::assertSame(
+            \Stripe\Stripe::getInitialNetworkRetryDelay() * 1,
+            $this->sleepTimeMethod->invoke($curlClient, 1, [])
         );
-        $this->assertEquals(
-            Stripe::getInitialNetworkRetryDelay() * 2,
-            $this->sleepTimeMethod->invoke($curlClient, 2)
+        static::assertSame(
+            \Stripe\Stripe::getInitialNetworkRetryDelay() * 2,
+            $this->sleepTimeMethod->invoke($curlClient, 2, [])
         );
-        $this->assertEquals(
-            Stripe::getInitialNetworkRetryDelay() * 4,
-            $this->sleepTimeMethod->invoke($curlClient, 3)
+        static::assertSame(
+            \Stripe\Stripe::getInitialNetworkRetryDelay() * 4,
+            $this->sleepTimeMethod->invoke($curlClient, 3, [])
         );
-        $this->assertEquals(
-            Stripe::getInitialNetworkRetryDelay() * 8,
-            $this->sleepTimeMethod->invoke($curlClient, 4)
+        static::assertSame(
+            \Stripe\Stripe::getInitialNetworkRetryDelay() * 8,
+            $this->sleepTimeMethod->invoke($curlClient, 4, [])
         );
     }
 
     public function testSleepTimeShouldEnforceMaxNetworkRetryDelay()
     {
-        $this->setInitialNetworkRetryDelay(1);
+        $this->setInitialNetworkRetryDelay(1.0);
         $this->setMaxNetworkRetryDelay(2);
 
         $curlClient = new CurlClient(null, $this->createFakeRandomGenerator());
 
-        $this->assertEquals(1, $this->sleepTimeMethod->invoke($curlClient, 1));
-        $this->assertEquals(2, $this->sleepTimeMethod->invoke($curlClient, 2));
-        $this->assertEquals(2, $this->sleepTimeMethod->invoke($curlClient, 3));
-        $this->assertEquals(2, $this->sleepTimeMethod->invoke($curlClient, 4));
+        static::assertSame(1.0, $this->sleepTimeMethod->invoke($curlClient, 1, []));
+        static::assertSame(2.0, $this->sleepTimeMethod->invoke($curlClient, 2, []));
+        static::assertSame(2.0, $this->sleepTimeMethod->invoke($curlClient, 3, []));
+        static::assertSame(2.0, $this->sleepTimeMethod->invoke($curlClient, 4, []));
+    }
+
+    public function testSleepTimeShouldRespectRetryAfter()
+    {
+        $this->setInitialNetworkRetryDelay(1.0);
+        $this->setMaxNetworkRetryDelay(2.0);
+
+        $curlClient = new CurlClient(null, $this->createFakeRandomGenerator());
+
+        // Uses max of default and header.
+        static::assertSame(10.0, $this->sleepTimeMethod->invoke($curlClient, 1, ['retry-after' => '10']));
+        static::assertSame(2.0, $this->sleepTimeMethod->invoke($curlClient, 2, ['retry-after' => '1']));
+
+        // Ignores excessively large values.
+        static::assertSame(2.0, $this->sleepTimeMethod->invoke($curlClient, 2, ['retry-after' => '100']));
     }
 
     public function testSleepTimeShouldAddSomeRandomness()
     {
         $randomValue = 0.8;
-        $this->setInitialNetworkRetryDelay(1);
-        $this->setMaxNetworkRetryDelay(8);
+        $this->setInitialNetworkRetryDelay(1.0);
+        $this->setMaxNetworkRetryDelay(8.0);
 
         $curlClient = new CurlClient(null, $this->createFakeRandomGenerator($randomValue));
 
-        $baseValue = Stripe::getInitialNetworkRetryDelay() * (0.5 * (1 + $randomValue));
+        $baseValue = \Stripe\Stripe::getInitialNetworkRetryDelay() * (0.5 * (1 + $randomValue));
 
         // the initial value cannot be smaller than the base,
         // so the randomness is ignored
-        $this->assertEquals(Stripe::getInitialNetworkRetryDelay(), $this->sleepTimeMethod->invoke($curlClient, 1));
+        static::assertSame(\Stripe\Stripe::getInitialNetworkRetryDelay(), $this->sleepTimeMethod->invoke($curlClient, 1, []));
 
         // after the first one, the randomness is applied
-        $this->assertEquals($baseValue * 2, $this->sleepTimeMethod->invoke($curlClient, 2));
-        $this->assertEquals($baseValue * 4, $this->sleepTimeMethod->invoke($curlClient, 3));
-        $this->assertEquals($baseValue * 8, $this->sleepTimeMethod->invoke($curlClient, 4));
+        static::assertSame($baseValue * 2, $this->sleepTimeMethod->invoke($curlClient, 2, []));
+        static::assertSame($baseValue * 4, $this->sleepTimeMethod->invoke($curlClient, 3, []));
+        static::assertSame($baseValue * 8, $this->sleepTimeMethod->invoke($curlClient, 4, []));
+    }
+
+    public function testResponseHeadersCaseInsensitive()
+    {
+        $charge = \Stripe\Charge::all();
+
+        $headers = $charge->getLastResponse()->headers;
+        static::assertNotNull($headers['request-id']);
+        static::assertSame($headers['request-id'], $headers['Request-Id']);
+    }
+
+    public function testSetRequestStatusCallback()
+    {
+        try {
+            $called = false;
+
+            $curl = new CurlClient();
+            $curl->setRequestStatusCallback(function ($rbody, $rcode, $rheaders, $errno, $message, $willBeRetried, $numRetries) use (&$called) {
+                $called = true;
+
+                $this->assertInternalType('string', $rbody);
+                $this->assertSame(200, $rcode);
+                $this->assertSame('req_123', $rheaders['request-id']);
+                $this->assertSame(0, $errno);
+                $this->assertNull($message);
+                $this->assertFalse($willBeRetried);
+                $this->assertSame(0, $numRetries);
+            });
+
+            \Stripe\ApiRequestor::setHttpClient($curl);
+
+            \Stripe\Charge::all();
+
+            static::assertTrue($called);
+        } finally {
+            \Stripe\ApiRequestor::setHttpClient(null);
+        }
     }
 }
