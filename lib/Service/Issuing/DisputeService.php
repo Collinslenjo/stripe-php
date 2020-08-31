@@ -1,5 +1,7 @@
 <?php
 
+// File generated from our OpenAPI spec
+
 namespace Stripe\Service\Issuing;
 
 class DisputeService extends \Stripe\Service\AbstractService
@@ -18,11 +20,15 @@ class DisputeService extends \Stripe\Service\AbstractService
      */
     public function all($params = null, $opts = null)
     {
-        return $this->request('get', '/v1/issuing/disputes', $params, $opts);
+        return $this->requestCollection('get', '/v1/issuing/disputes', $params, $opts);
     }
 
     /**
-     * Creates an Issuing <code>Dispute</code> object.
+     * Creates an Issuing <code>Dispute</code> object. Individual pieces of evidence
+     * within the <code>evidence</code> object are optional at this point. Stripe only
+     * validates that required evidence is present during submission. Refer to <a
+     * href="/docs/issuing/purchases/disputes#dispute-reasons-and-evidence">Dispute
+     * reasons and evidence</a> for more details about evidence requirements.
      *
      * @param null|array $params
      * @param null|array|\Stripe\Util\RequestOptions $opts
@@ -55,6 +61,8 @@ class DisputeService extends \Stripe\Service\AbstractService
     /**
      * Updates the specified Issuing <code>Dispute</code> object by setting the values
      * of the parameters passed. Any parameters not provided will be left unchanged.
+     * Properties on the <code>evidence</code> object can be unset by passing in an
+     * empty string.
      *
      * @param string $id
      * @param null|array $params
